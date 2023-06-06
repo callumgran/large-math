@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Ignore soydev editor
+.vscode/*
+.vscode/**/*
+
+# Ignore build files
+.obj/
