@@ -15,27 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef NUMBER_H
-#define NUMBER_H
-
+#include <stdlib.h>
 #include <stdbool.h>
 
-#include "lib/common.h"
+#include "lib/logger.h"
+#include "math/subtraction.h"
+#include "math/addition.h"
 
-#define NUMBER_DEFAULT_CAPACITY 32
-
-typedef struct {
-    u8 *digits;
-    u32 length;
-    u32 capacity;
-    u32 decimal_point;
-    bool negative;
-} Number;
-
-bool number_init(Number *number, const char *num_str);
-
-void number_print(Number *number);
-
-void number_free(Number *number);
-
-#endif /* NUMBER_H */
+bool number_subtraction(const Number *a, const Number *b, Number *result)
+{
+        return false;
+}
