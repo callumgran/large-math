@@ -60,3 +60,5 @@ dkms.conf
 
 # Ignore binary files
 math
+!src/math
+!include/math
