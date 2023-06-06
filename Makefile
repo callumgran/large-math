@@ -39,3 +39,6 @@ bear:
 
 format:
 	python format.py
+
+$(OBJDIR):
+	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
