@@ -140,8 +140,8 @@ static bool number_addition_one_decimal(const Number *a, const Number *b, Number
     u32 b_idx = 0;
     bool carry = false;
 
-    for (a_idx = 0; a_idx < a->decimal_point; a_idx++) {
-	result->digits[res_idx++] = a->digits[a_idx];
+    while (a_idx < a->decimal_point) {
+	result->digits[res_idx++] = a->digits[a_idx++];
     }
 
     if (a_is_longer) {
@@ -168,7 +168,46 @@ static bool number_addition_one_decimal(const Number *a, const Number *b, Number
 
 static bool number_addition_two_decimals(const Number *a, const Number *b, Number *result)
 {
-    return false;
+    result->decimal_point = a->decimal_point;
+
+    reallocate_result_cap(a->capacity, b->capacity, result);
+
+    u32 a_dec_len = a->length - a->decimal_point;
+    u32 b_dec_len = b->length - b->decimal_point;
+
+    u32 pre_len = a_dec_len - b_dec_len;
+
+    bool a_is_longer = a->length - a_dec_len > b->length - b_dec_len;
+
+    u32 res_idx = 0;
+    u32 a_idx = 0;
+    u32 b_idx = 0;
+    bool carry = false;
+
+    while (a_idx < pre_len) {
+	result->digits[res_idx++] = a->digits[a_idx++];
+    }
+
+    if (a_is_longer) {
+	carry = main_addition_loop(b, a, result, &b_idx, &a_idx, &res_idx);
+
+	carry = carry_addition_loop(a, result, &a_idx, &res_idx, carry);
+    } else {
+	result->decimal_point = b->length - b_dec_len;
+	carry = main_addition_loop(a, b, result, &a_idx, &b_idx, &res_idx);
+
+	carry = carry_addition_loop(b, result, &b_idx, &res_idx, carry);
+    }
+
+    if (carry) {
+	ENSURE_CAP(sizeof(u8), res_idx, result->capacity, result->digits);
+	result->digits[res_idx++] = 1;
+	result->decimal_point++;
+    }
+
+    result->length = res_idx;
+
+    return true;
 }
 
 bool number_addition(const Number *a, const Number *b, Number *result)
@@ -188,6 +227,8 @@ bool number_addition(const Number *a, const Number *b, Number *result)
 	return false;
     }
 
+    result->negative = false;
+
     if (a->negative && b->negative) {
 	result->negative = true;
     } else if (a->negative || b->negative) {
@@ -198,18 +239,22 @@ bool number_addition(const Number *a, const Number *b, Number *result)
 	}
     }
 
-    result->negative = false;
-
     bool a_no_decimal = a->decimal_point == 0;
     bool b_no_decimal = b->decimal_point == 0;
 
     if (a_no_decimal && b_no_decimal) {
 	return number_addition_no_decimal(a, b, result);
     } else if (!a_no_decimal && !b_no_decimal) {
-	return number_addition_two_decimals(a, b, result);
+	if ((a->length - a->decimal_point) > (b->length - b->decimal_point)) {
+	    return number_addition_two_decimals(a, b, result);
+	} else {
+	    return number_addition_two_decimals(b, a, result);
+	}
     } else if (b_no_decimal) {
 	return number_addition_one_decimal(a, b, result);
     } else {
 	return number_addition_one_decimal(b, a, result);
     }
+
+    return false;
 }
