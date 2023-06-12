@@ -20,9 +20,24 @@
 
 #include <ctype.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+static void reverse_digits(u8 *digits, u32 length)
+{
+    u32 i = 0;
+    u32 j = length - 1;
+
+    while (i < j) {
+	u8 temp = digits[i];
+	digits[i] = digits[j];
+	digits[j] = temp;
+
+	i++;
+	j--;
+    }
+}
 
 static inline bool is_valid_start_char(const char c)
 {
@@ -87,20 +102,22 @@ static void str_to_number(Number *number, const char *str)
 {
     number->negative = str[0] == '-';
 
-    u32 j = number->negative ? 1 : 0;
+    i32 curr_pos = 0;
 
-    for (u8 *i = str + j; *i != '\0'; i++) {
-	ENSURE_CAP(sizeof(u8), j, number->capacity, number->digits);
+    const i32 str_len = strlen(str);
 
-	if (*i == '.') {
-	    number->decimal_point = j;
+    for (i32 i = str_len - 1; i >= (i32)number->negative; --i) {
+	ENSURE_CAP(sizeof(u8), (u32)curr_pos, number->capacity, number->digits);
+
+	if (str[i] == '.') {
+	    number->decimal_point = i - number->negative;
 	    continue;
 	}
 
-	number->digits[j++] = char_to_digit(*i);
+	number->digits[curr_pos++] = char_to_digit(str[i]);
     }
 
-    number->length = j;
+    number->length = curr_pos;
 }
 
 bool number_init(Number *number, const char *number_str)
@@ -118,34 +135,54 @@ bool number_init(Number *number, const char *number_str)
     return true;
 }
 
+bool result_init(Number *result)
+{
+    result->digits = malloc(NUMBER_DEFAULT_CAPACITY * sizeof(u8));
+    result->capacity = NUMBER_DEFAULT_CAPACITY;
+    result->decimal_point = 0;
+    result->negative = false;
+    result->length = 0;
+    memset(result->digits, 0, NUMBER_DEFAULT_CAPACITY * sizeof(u8));
+
+    return true;
+}
+
 void number_print(Number *number)
 {
     bool has_decimal_point = number->decimal_point != 0;
 
     u32 str_len = number->length + has_decimal_point + number->negative;
-    
-    char *str = malloc(str_len + 1);
-    
+
+    u8 digits_to_print[number->length];
+    memcpy(digits_to_print, number->digits, number->length);
+
+    reverse_digits(digits_to_print, number->length);
+
+    char str[str_len + 1];
+
     u32 str_pos = 0;
 
     if (number->negative) {
 	str[str_pos++] = '-';
     }
 
-    for (u32 i = str_pos; i < number->length && str_pos < str_len; i++) {
-	
+    for (u32 i = 0; i < number->length && str_pos < str_len; i++) {
 	if (has_decimal_point && i == number->decimal_point) {
 	    str[str_pos++] = '.';
 	}
-	
-	str[str_pos++] = digit_to_char(number->digits[i]);
+
+	str[str_pos++] = digit_to_char(digits_to_print[i]);
     }
 
     str[str_pos] = '\0';
 
-    printf("%s\n", str);
+    printf("%s", str);
+}
 
-    free(str);
+void number_println(Number *number)
+{
+    number_print(number);
+    putchar('\n');
 }
 
 void number_free(Number *number)

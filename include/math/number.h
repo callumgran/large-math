@@ -24,6 +24,9 @@
 
 #define NUMBER_DEFAULT_CAPACITY 32
 
+/**
+ * Digit array is stored in reverse order
+ */
 typedef struct {
     u8 *digits;
     u32 length;
@@ -34,7 +37,11 @@ typedef struct {
 
 bool number_init(Number *number, const char *num_str);
 
+bool result_init(Number *result);
+
 void number_print(Number *number);
+
+void number_println(Number *number);
 
 void number_free(Number *number);
 

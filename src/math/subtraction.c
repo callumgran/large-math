@@ -15,14 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "lib/logger.h"
-#include "math/subtraction.h"
 #include "math/addition.h"
+#include "math/subtraction.h"
 
 bool number_subtraction(const Number *a, const Number *b, Number *result)
 {
-        return false;
+    return false;
 }

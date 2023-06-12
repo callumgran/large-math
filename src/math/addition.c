@@ -15,191 +15,201 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "lib/logger.h"
 #include "math/addition.h"
 #include "math/subtraction.h"
 
-static void reverse_digits(u8 *digits, u32 length)
+static inline void reallocate_result_cap(const u32 cap_a, const u32 cap_b, Number *result)
 {
-        u32 i = 0;
-        u32 j = length - 1;
+    u32 max_cap = MAX(cap_a, cap_b);
 
-        while (i < j) {
-                u8 temp = digits[i];
-                digits[i] = digits[j];
-                digits[j] = temp;
+    // If the result is longer than the current capacity, reallocate
+    if (result->capacity < max_cap) {
+	result->capacity = max_cap;
+	result->digits = realloc(result->digits, result->capacity * sizeof(u8));
+    }
 
-                i++;
-                j--;
-        }
+    memset(result->digits, 0, result->capacity * sizeof(u8));
+}
+
+static inline u8 sum_of_three(const Number *a, const Number *b, const Number *c, const u32 a_idx,
+			      const u32 b_idx, const u32 c_idx)
+{
+    return a->digits[a_idx] + b->digits[b_idx] + c->digits[c_idx];
+}
+
+static inline bool main_addition_loop(const Number *a, const Number *b, Number *result, u32 *a_idx,
+				      u32 *b_idx, u32 *res_idx)
+{
+    bool carry = false;
+
+    u32 local_res_idx = *res_idx;
+    u32 local_a_idx = *a_idx;
+    u32 local_b_idx = *b_idx;
+    while (local_a_idx < a->length) {
+	u8 sum = sum_of_three(a, b, result, local_a_idx++, local_b_idx++, local_res_idx);
+	if (sum > 9) {
+	    result->digits[local_res_idx++] = sum - 10;
+	    result->digits[local_res_idx] += 1;
+	    carry = true;
+	} else {
+	    result->digits[local_res_idx++] = sum;
+	    carry = false;
+	}
+    }
+
+    *res_idx = local_res_idx;
+    *a_idx = local_a_idx;
+    *b_idx = local_b_idx;
+    return carry;
+}
+
+static inline bool carry_addition_loop(const Number *a, Number *result, u32 *a_idx, u32 *res_idx,
+				       bool carry)
+{
+    bool local_carry = carry;
+
+    u32 local_res_idx = *res_idx;
+    u32 local_a_idx = *a_idx;
+    while (local_a_idx < a->length) {
+	u8 sum = result->digits[local_res_idx] + a->digits[local_a_idx++];
+	if (sum > 9) {
+	    result->digits[local_res_idx++] += sum - 10;
+	    result->digits[local_res_idx] += 1;
+	    local_carry = true;
+	} else {
+	    result->digits[local_res_idx++] += sum;
+	    local_carry = false;
+	}
+    }
+
+    *res_idx = local_res_idx;
+    return local_carry;
 }
 
 static bool number_addition_no_decimal(const Number *a, const Number *b, Number *result)
 {
-        result->decimal_point = 0;
-        
-        u32 max_cap = MAX(a->capacity, b->capacity);
+    result->decimal_point = 0;
 
-        // If the result is longer than the current capacity, reallocate
-        if (result->capacity < max_cap) {
-                result->capacity = max_cap;
-                result->digits = realloc(result->digits, result->capacity * sizeof(u8));
-                if (result->digits == NULL) {
-                        LOG_ERR("Failed to reallocate memory for result");
-                        return false;
-                }
-        }
+    reallocate_result_cap(a->capacity, b->capacity, result);
 
-        memset(result->digits, 0, result->capacity * sizeof(u8));
+    bool a_is_longer = a->length > b->length;
 
-        
-        u32 a_index = a->decimal_point;
-        u32 b_index = b->length;
+    u32 res_idx = 0;
+    u32 a_idx = 0;
+    u32 b_idx = 0;
+    bool carry = false;
 
-        bool a_is_longer = a_index > b_index;
-        
-        u32 res_idx = 0;
-        
-        // Add the digits before the decimal point
-        while (a_index > 0 && b_index > 0) {
-                u8 a_digit = a->digits[--a_index];
-                u8 b_digit = b->digits[--b_index];
-                u8 sum = a_digit + b_digit;
-                if (sum > 9) {
-                        result->digits[res_idx++] += sum - 10;
-                        result->digits[res_idx] += 1;
-                } else {
-                        result->digits[res_idx++] += sum;
-                }
-        }
+    if (a_is_longer) {
+	carry = main_addition_loop(b, a, result, &b_idx, &a_idx, &res_idx);
 
-        // Add the remaining digits from the longer number
-        if (a_is_longer) {
-                while (a_index > 0) {
-                        result->digits[res_idx++] += a->digits[a_index--];
-                }
-        } else {
-                while (b_index > 0) {
-                        result->digits[res_idx++] += b->digits[b_index--];
-                }
-        }
+	carry = carry_addition_loop(a, result, &a_idx, &res_idx, carry);
+    } else {
+	carry = main_addition_loop(a, b, result, &a_idx, &b_idx, &res_idx);
 
-        result->length = res_idx;
-        
-        reverse_digits(result->digits, result->length);
+	carry = carry_addition_loop(b, result, &b_idx, &res_idx, carry);
+    }
 
-        return true;
+    if (carry) {
+	ENSURE_CAP(sizeof(u8), res_idx, result->capacity, result->digits);
+	result->digits[res_idx++] = 1;
+    }
+
+    result->length = res_idx;
+
+    return true;
 }
 
 /* The first number is the one with the decimal point */
 static bool number_addition_one_decimal(const Number *a, const Number *b, Number *result)
-{        
-        u32 max_cap = MAX(a->capacity, b->capacity);
+{
+    result->decimal_point = a->decimal_point;
 
-        // If the result is longer than the current capacity, reallocate
-        if (result->capacity < max_cap) {
-                result->capacity = max_cap;
-                result->digits = realloc(result->digits, result->capacity * sizeof(u8));
-                if (result->digits == NULL) {
-                        LOG_ERR("Failed to reallocate memory for result");
-                        return false;
-                }
-        }
+    reallocate_result_cap(a->capacity, b->capacity, result);
 
-        memset(result->digits, 0, result->capacity * sizeof(u8));
+    u32 a_len = a->length - a->decimal_point;
 
-        u32 a_index = a->decimal_point;
-        u32 b_index = b->length;
+    bool a_is_longer = a_len > b->length;
 
-        bool a_is_longer = a_index > b_index;
-        
-        u32 res_idx = 0;
+    u32 res_idx = 0;
+    u32 a_idx = 0;
+    u32 b_idx = 0;
+    bool carry = false;
 
-        // Feed in the digits after the decimal point in reverse order
-        for (u32 i = a->length - 1; i >= a->decimal_point; --i) {
-                result->digits[res_idx++] = a->digits[i];
-        }
-        
-        // Add the digits before the decimal point
-        while (a_index > 0 && b_index > 0) {
-                u8 a_digit = a->digits[--a_index];
-                u8 b_digit = b->digits[--b_index];
-                u8 sum = a_digit + b_digit;
-                if (sum > 9) {
-                        result->digits[res_idx++] += sum - 10;
-                        result->digits[res_idx] += 1;
-                } else {
-                        result->digits[res_idx++] += sum;
-                }
-        }
+    for (a_idx = 0; a_idx < a->decimal_point; a_idx++) {
+	result->digits[res_idx++] = a->digits[a_idx];
+    }
 
-        // Add the remaining digits from the longer number
-        if (a_is_longer) {
-                while (a_index > 0) {
-                        result->digits[res_idx++] += a->digits[a_index--];
-                }
-        } else {
-                while (b_index > 0) {
-                        result->digits[res_idx++] += b->digits[b_index--];
-                }
-        }
+    if (a_is_longer) {
+	carry = main_addition_loop(b, a, result, &b_idx, &a_idx, &res_idx);
 
-        result->length = res_idx;
-        result->decimal_point = res_idx - a->decimal_point;
+	carry = carry_addition_loop(a, result, &a_idx, &res_idx, carry);
+    } else {
+	result->decimal_point += b->length - a_len;
+	carry = main_addition_loop(a, b, result, &a_idx, &b_idx, &res_idx);
 
-        reverse_digits(result->digits, result->length);
+	carry = carry_addition_loop(b, result, &b_idx, &res_idx, carry);
+    }
 
-        return true;
+    if (carry) {
+	ENSURE_CAP(sizeof(u8), res_idx, result->capacity, result->digits);
+	result->digits[res_idx++] = 1;
+	result->decimal_point++;
+    }
+
+    result->length = res_idx;
+
+    return true;
 }
 
 static bool number_addition_two_decimals(const Number *a, const Number *b, Number *result)
 {
-        return false;
+    return false;
 }
 
 bool number_addition(const Number *a, const Number *b, Number *result)
 {
-        if (a == NULL) {
-                LOG_ERR("First input is NULL"); 
-                return false;
-        }
+    if (a == NULL) {
+	LOG_ERR("First input is NULL");
+	return false;
+    }
 
-        if (b == NULL) {
-                LOG_ERR("Second input is NULL");
-                return false;
-        }
+    if (b == NULL) {
+	LOG_ERR("Second input is NULL");
+	return false;
+    }
 
-        if (result == NULL) {
-                LOG_ERR("Result is NULL at input");
-                return false;
-        }
+    if (result == NULL) {
+	LOG_ERR("Result is NULL at input");
+	return false;
+    }
 
-        if (a->negative && b->negative) {
-                result->negative = true;
-        } else if (a->negative || b->negative) {
-                if (a->negative) {
-                        return number_subtraction(b, a, result);
-                } else {
-                        return number_subtraction(a, b, result);
-                }
-        }
+    if (a->negative && b->negative) {
+	result->negative = true;
+    } else if (a->negative || b->negative) {
+	if (a->negative) {
+	    return number_subtraction(b, a, result);
+	} else {
+	    return number_subtraction(a, b, result);
+	}
+    }
 
-        result->negative = false;
+    result->negative = false;
 
-        bool a_no_decimal = a->decimal_point == 0;
-        bool b_no_decimal = b->decimal_point == 0;
+    bool a_no_decimal = a->decimal_point == 0;
+    bool b_no_decimal = b->decimal_point == 0;
 
-        if (a_no_decimal && b_no_decimal) {
-                return number_addition_no_decimal(a, b, result);
-        } else if (!a_no_decimal && !b_no_decimal) {
-                return number_addition_two_decimals(a, b, result);
-        } else if (b_no_decimal) {
-                return number_addition_one_decimal(a, b, result);
-        } else {
-                return number_addition_one_decimal(b, a, result);
-        }
+    if (a_no_decimal && b_no_decimal) {
+	return number_addition_no_decimal(a, b, result);
+    } else if (!a_no_decimal && !b_no_decimal) {
+	return number_addition_two_decimals(a, b, result);
+    } else if (b_no_decimal) {
+	return number_addition_one_decimal(a, b, result);
+    } else {
+	return number_addition_one_decimal(b, a, result);
+    }
 }
