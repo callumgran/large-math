@@ -170,7 +170,6 @@ void number_print(Number *number)
 	if (has_decimal_point && i == number->decimal_point) {
 	    str[str_pos++] = '.';
 	}
-
 	str[str_pos++] = digit_to_char(digits_to_print[i]);
     }
 

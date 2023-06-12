@@ -43,38 +43,6 @@ static inline i8 sum_of_three(const Number *a, const Number *b, const Number *c,
 }
 
 static inline bool main_subtraction_loop(const Number *a, const Number *b, Number *result,
-					 u32 *a_idx, u32 *b_idx, u32 *res_idx)
-{
-    u32 local_res_idx = *res_idx;
-    u32 local_a_idx = *a_idx;
-    u32 local_b_idx = *b_idx;
-    bool carry = false;
-
-    while (local_a_idx < a->length) {
-	i8 sum = sum_of_three(a, b, result, local_a_idx++, local_b_idx++, local_res_idx);
-
-	if (carry) {
-	    sum--;
-	}
-
-	if (sum < 0) {
-	    sum += 10;
-	    result->digits[local_res_idx++] = sum;
-	    carry = true;
-	} else {
-	    result->digits[local_res_idx++] = sum;
-	    carry = false;
-	}
-    }
-
-    *a_idx = local_a_idx;
-    *b_idx = local_b_idx;
-    *res_idx = local_res_idx;
-
-    return carry;
-}
-
-static inline bool equal_length_subtraction_loop(const Number *a, const Number *b, Number *result,
 					 u32 *a_idx, u32 *b_idx, u32 *res_idx, u32 max_len)
 {
     u32 local_res_idx = *res_idx;
@@ -82,7 +50,7 @@ static inline bool equal_length_subtraction_loop(const Number *a, const Number *
     u32 local_b_idx = *b_idx;
     bool carry = false;
 
-    while (local_a_idx <= max_len) {
+    while (local_a_idx < max_len) {
 	i8 sum = sum_of_three(a, b, result, local_a_idx++, local_b_idx++, local_res_idx);
 
 	if (carry) {
@@ -106,7 +74,8 @@ static inline bool equal_length_subtraction_loop(const Number *a, const Number *
     return carry;
 }
 
-static bool carry_subtraction_loop(const Number *a, Number *result, u32 *a_idx, u32 *res_idx, bool carry)
+static bool carry_subtraction_loop(const Number *a, Number *result, u32 *a_idx, u32 *res_idx,
+				   bool carry)
 {
     u32 local_res_idx = *res_idx;
     u32 local_a_idx = *a_idx;
@@ -136,38 +105,39 @@ static bool number_subtraction_no_decimal(const Number *a, const Number *b, Numb
     u32 res_idx = 0;
     bool carry = false;
 
-    u32 diff = 0;
-
     if (a->length < b->length) {
 	result->negative = true;
-	carry = main_subtraction_loop(a, b, result, &a_idx, &b_idx, &res_idx);
+	carry = main_subtraction_loop(b, a, result, &a_idx, &b_idx, &res_idx, a->length);
 	carry = carry_subtraction_loop(b, result, &b_idx, &res_idx, carry);
     } else if (a->length > b->length) {
-	carry = main_subtraction_loop(b, a, result, &a_idx, &b_idx, &res_idx);
+	carry = main_subtraction_loop(a, b, result, &a_idx, &b_idx, &res_idx, b->length);
 	carry = carry_subtraction_loop(a, result, &a_idx, &res_idx, carry);
     } else {
 	u32 tmp = a->length - 1;
-	while (b->digits[tmp] == a->digits[tmp--]);
-	if (b->digits[tmp] > a->digits[tmp]) {
+	while (b->digits[tmp] == a->digits[tmp--])
+	    ;
+	if (b->digits[++tmp] > a->digits[tmp]) {
 	    result->negative = true;
-	    carry = equal_length_subtraction_loop(b, a, result, &a_idx, &b_idx, &res_idx, ++tmp);
+	    carry = main_subtraction_loop(b, a, result, &a_idx, &b_idx, &res_idx, ++tmp);
 	} else {
-	    carry = equal_length_subtraction_loop(a, b, result, &a_idx, &b_idx, &res_idx, ++tmp);
+	    carry = main_subtraction_loop(a, b, result, &a_idx, &b_idx, &res_idx, ++tmp);
 	}
     }
 
     if (carry) {
 	ENSURE_CAP(sizeof(u8), res_idx, result->capacity, result->digits);
 	result->digits[res_idx++] -= 1;
-	if (result->digits[res_idx - 1] == 0) {
-	    res_idx--;
-	} else if (result->digits[res_idx - 1] < 0) {
-	    result->negative = true;
-	    result->digits[res_idx - 1] *= -1;
-	}
     }
 
-    result->length = res_idx;
+    if (result->digits[res_idx - 1] < 0) {
+	result->negative = true;
+	result->digits[res_idx - 1] += 10;
+    }
+
+    while (result->digits[res_idx-- - 1] == 0)
+	;
+
+    result->length = ++res_idx;
 
     return true;
 }

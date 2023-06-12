@@ -82,8 +82,8 @@ int main()
 
     // load_num(&number, num_str4);
 
-    char *num_str5 = "123456789";
-    char *num_str6 = "1198765432";
+    char *num_str5 = "112345678";
+    char *num_str6 = "11234567";
 
     Number a;
 
