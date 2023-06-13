@@ -39,10 +39,12 @@ bool number_init(Number *number, const char *num_str);
 
 bool result_init(Number *result);
 
-void number_print(Number *number);
+void number_print(const Number *number);
 
-void number_println(Number *number);
+void number_println(const Number *number);
 
 void number_free(Number *number);
+
+bool number_copy(Number *dest, const Number *src);
 
 #endif /* NUMBER_H */

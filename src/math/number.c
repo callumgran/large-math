@@ -147,7 +147,7 @@ bool result_init(Number *result)
     return true;
 }
 
-void number_print(Number *number)
+void number_print(const Number *number)
 {
     bool has_decimal_point = number->decimal_point != 0;
 
@@ -178,7 +178,7 @@ void number_print(Number *number)
     printf("%s", str);
 }
 
-void number_println(Number *number)
+void number_println(const Number *number)
 {
     number_print(number);
     putchar('\n');
@@ -187,4 +187,27 @@ void number_println(Number *number)
 void number_free(Number *number)
 {
     free(number->digits);
+}
+
+bool number_copy(Number *dest, const Number *src)
+{
+    if (dest == NULL) {
+	LOG_ERR("dest is NULL");
+	return false;
+    }
+
+    if (src == NULL) {
+	LOG_ERR("src is NULL");
+	return false;
+    }
+
+    dest->digits = malloc(src->capacity * sizeof(u8));
+    dest->capacity = src->capacity;
+    dest->length = src->length;
+    dest->decimal_point = src->decimal_point;
+    dest->negative = src->negative;
+
+    memcpy(dest->digits, src->digits, src->length * sizeof(u8));
+
+    return true;
 }

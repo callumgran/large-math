@@ -114,9 +114,12 @@ static bool number_subtraction_no_decimal(const Number *a, const Number *b, Numb
 	carry = carry_subtraction_loop(a, result, &a_idx, &res_idx, carry);
     } else {
 	u32 tmp = a->length - 1;
-	while (b->digits[tmp] == a->digits[tmp--])
-	    ;
-	if (b->digits[++tmp] > a->digits[tmp]) {
+
+	while (b->digits[tmp] == a->digits[tmp]) {
+	    tmp--;
+	}
+
+	if (b->digits[tmp] > a->digits[tmp]) {
 	    result->negative = true;
 	    carry = main_subtraction_loop(b, a, result, &a_idx, &b_idx, &res_idx, ++tmp);
 	} else {
@@ -129,15 +132,16 @@ static bool number_subtraction_no_decimal(const Number *a, const Number *b, Numb
 	result->digits[res_idx++] -= 1;
     }
 
-    if (result->digits[res_idx - 1] < 0) {
+    if ((i8)result->digits[res_idx - 1] < 0) {
 	result->negative = true;
 	result->digits[res_idx - 1] += 10;
     }
 
-    while (result->digits[res_idx-- - 1] == 0)
-	;
+    while (result->digits[res_idx - 1] == 0) {
+	res_idx--;
+    }
 
-    result->length = ++res_idx;
+    result->length = res_idx;
 
     return true;
 }
@@ -157,6 +161,15 @@ bool number_subtraction(const Number *a, const Number *b, Number *result)
     if (result == NULL) {
 	LOG_ERR("Result is NULL at input");
 	return false;
+    }
+
+    if (b->negative) {
+	Number tmp;
+	number_copy(&tmp, b);
+	tmp.negative = false;
+	bool ret = number_addition(a, &tmp, result);
+	number_free(&tmp);
+	return ret;
     }
 
     result->negative = false;
