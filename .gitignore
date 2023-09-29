@@ -60,5 +60,6 @@ dkms.conf
 
 # Ignore binary files
 math
+load_number_test
 !src/math
 !include/math

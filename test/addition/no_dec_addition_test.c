@@ -1,23 +1,9 @@
 #include <stdio.h>
+#include <stdbool.h>
 
-#include "lib/logger.h"
-#include "math/addition.h"
-#include "math/number.h"
-#include "math/subtraction.h"
-
-static void load_num(Number *number, const char *num_str)
-{
-	bool ret = number_init(number, num_str);
-
-	if (!ret) {
-		LOG_ERR("Failed to initialize number from string: %s", num_str);
-		return;
-	}
-
-	number_println(number);
-
-	number_free(number);
-}
+#include "../../include/lib/logger.h"
+#include "../../include/math/addition.h"
+#include "../../include/math/number.h"
 
 static void perform_addition(Number *a, Number *b)
 {

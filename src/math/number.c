@@ -26,188 +26,188 @@
 
 static void reverse_digits(u8 *digits, u32 length)
 {
-    u32 i = 0;
-    u32 j = length - 1;
+	u32 i = 0;
+	u32 j = length - 1;
 
-    while (i < j) {
-	u8 temp = digits[i];
-	digits[i] = digits[j];
-	digits[j] = temp;
+	while (i < j) {
+		u8 temp = digits[i];
+		digits[i] = digits[j];
+		digits[j] = temp;
 
-	i++;
-	j--;
-    }
+		i++;
+		j--;
+	}
 }
 
 static inline bool is_valid_start_char(const char c)
 {
-    return isdigit(c) || c == '-';
+	return isdigit(c) || c == '-';
 }
 
 static inline bool is_valid_number(const char *number_str)
 {
-    bool decimal_point_found = false;
+	bool decimal_point_found = false;
 
-    for (u8 *i = number_str; *i != '\0'; i++) {
-	if (*i == '.') {
-	    if (decimal_point_found) {
-		return false;
-	    } else {
-		decimal_point_found = true;
-	    }
-	} else if (!isdigit(*i)) {
-	    return false;
+	for (u8 *i = number_str; *i != '\0'; i++) {
+		if (*i == '.') {
+			if (decimal_point_found) {
+				return false;
+			} else {
+				decimal_point_found = true;
+			}
+		} else if (!isdigit(*i)) {
+			return false;
+		}
 	}
-    }
 
-    return true;
+	return true;
 }
 
 static inline bool validate_digit_str(const char *digit_str)
 {
-    if (digit_str == NULL) {
-	LOG_ERR("digit_str is NULL");
-	return false;
-    }
+	if (digit_str == NULL) {
+		LOG_ERR("digit_str is NULL");
+		return false;
+	}
 
-    if (digit_str[0] == '\0') {
-	LOG_ERR("digit_str is empty");
-	return false;
-    }
+	if (digit_str[0] == '\0') {
+		LOG_ERR("digit_str is empty");
+		return false;
+	}
 
-    if (!is_valid_start_char(digit_str[0])) {
-	LOG_ERR("digit_str does not start with a valid character");
-	return false;
-    }
+	if (!is_valid_start_char(digit_str[0])) {
+		LOG_ERR("digit_str does not start with a valid character");
+		return false;
+	}
 
-    if (!is_valid_number(digit_str + 1)) {
-	LOG_ERR("digit_str contains invalid characters");
-	return false;
-    }
+	if (!is_valid_number(digit_str + 1)) {
+		LOG_ERR("digit_str contains invalid characters");
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 static inline u8 char_to_digit(const char c)
 {
-    return c - '0';
+	return c - '0';
 }
 
 static inline char digit_to_char(const u8 digit)
 {
-    return digit + '0';
+	return digit + '0';
 }
 
 static void str_to_number(Number *number, const char *str)
 {
-    number->negative = str[0] == '-';
+	number->negative = str[0] == '-';
 
-    i32 curr_pos = 0;
+	i32 curr_pos = 0;
 
-    const i32 str_len = strlen(str);
+	const i32 str_len = strlen(str);
 
-    for (i32 i = str_len - 1; i >= (i32)number->negative; --i) {
-	ENSURE_CAP(sizeof(u8), (u32)curr_pos, number->capacity, number->digits);
+	for (i32 i = str_len - 1; i >= (i32)number->negative; --i) {
+		ENSURE_CAP(sizeof(u8), (u32)curr_pos, number->capacity, number->digits);
 
-	if (str[i] == '.') {
-	    number->decimal_point = i - number->negative;
-	    continue;
+		if (str[i] == '.') {
+			number->decimal_point = i - number->negative;
+			continue;
+		}
+
+		number->digits[curr_pos++] = char_to_digit(str[i]);
 	}
 
-	number->digits[curr_pos++] = char_to_digit(str[i]);
-    }
-
-    number->length = curr_pos;
+	number->length = curr_pos;
 }
 
 bool number_init(Number *number, const char *number_str)
 {
-    if (!validate_digit_str(number_str)) {
-	return false;
-    }
+	if (!validate_digit_str(number_str)) {
+		return false;
+	}
 
-    number->digits = malloc(NUMBER_DEFAULT_CAPACITY * sizeof(u8));
-    number->capacity = NUMBER_DEFAULT_CAPACITY;
-    number->decimal_point = 0;
+	number->digits = malloc(NUMBER_DEFAULT_CAPACITY * sizeof(u8));
+	number->capacity = NUMBER_DEFAULT_CAPACITY;
+	number->decimal_point = 0;
 
-    str_to_number(number, number_str);
+	str_to_number(number, number_str);
 
-    return true;
+	return true;
 }
 
 bool result_init(Number *result)
 {
-    result->digits = malloc(NUMBER_DEFAULT_CAPACITY * sizeof(u8));
-    result->capacity = NUMBER_DEFAULT_CAPACITY;
-    result->decimal_point = 0;
-    result->negative = false;
-    result->length = 0;
-    memset(result->digits, 0, NUMBER_DEFAULT_CAPACITY * sizeof(u8));
+	result->digits = malloc(NUMBER_DEFAULT_CAPACITY * sizeof(u8));
+	result->capacity = NUMBER_DEFAULT_CAPACITY;
+	result->decimal_point = 0;
+	result->negative = false;
+	result->length = 0;
+	memset(result->digits, 0, NUMBER_DEFAULT_CAPACITY * sizeof(u8));
 
-    return true;
+	return true;
 }
 
 void number_print(const Number *number)
 {
-    bool has_decimal_point = number->decimal_point != 0;
+	bool has_decimal_point = number->decimal_point != 0;
 
-    u32 str_len = number->length + has_decimal_point + number->negative;
+	u32 str_len = number->length + has_decimal_point + number->negative;
 
-    u8 digits_to_print[number->length];
-    memcpy(digits_to_print, number->digits, number->length);
+	u8 digits_to_print[number->length];
+	memcpy(digits_to_print, number->digits, number->length);
 
-    reverse_digits(digits_to_print, number->length);
+	reverse_digits(digits_to_print, number->length);
 
-    char str[str_len + 1];
+	char str[str_len + 1];
 
-    u32 str_pos = 0;
+	u32 str_pos = 0;
 
-    if (number->negative) {
-	str[str_pos++] = '-';
-    }
-
-    for (u32 i = 0; i < number->length && str_pos < str_len; i++) {
-	if (has_decimal_point && i == number->decimal_point) {
-	    str[str_pos++] = '.';
+	if (number->negative) {
+		str[str_pos++] = '-';
 	}
-	str[str_pos++] = digit_to_char(digits_to_print[i]);
-    }
 
-    str[str_pos] = '\0';
+	for (u32 i = 0; i < number->length && str_pos < str_len; i++) {
+		if (has_decimal_point && i == number->decimal_point) {
+			str[str_pos++] = '.';
+		}
+		str[str_pos++] = digit_to_char(digits_to_print[i]);
+	}
 
-    printf("%s", str);
+	str[str_pos] = '\0';
+
+	printf("%s", str);
 }
 
 void number_println(const Number *number)
 {
-    number_print(number);
-    putchar('\n');
+	number_print(number);
+	putchar('\n');
 }
 
 void number_free(Number *number)
 {
-    free(number->digits);
+	free(number->digits);
 }
 
 bool number_copy(Number *dest, const Number *src)
 {
-    if (dest == NULL) {
-	LOG_ERR("dest is NULL");
-	return false;
-    }
+	if (dest == NULL) {
+		LOG_ERR("dest is NULL");
+		return false;
+	}
 
-    if (src == NULL) {
-	LOG_ERR("src is NULL");
-	return false;
-    }
+	if (src == NULL) {
+		LOG_ERR("src is NULL");
+		return false;
+	}
 
-    dest->digits = malloc(src->capacity * sizeof(u8));
-    dest->capacity = src->capacity;
-    dest->length = src->length;
-    dest->decimal_point = src->decimal_point;
-    dest->negative = src->negative;
+	dest->digits = malloc(src->capacity * sizeof(u8));
+	dest->capacity = src->capacity;
+	dest->length = src->length;
+	dest->decimal_point = src->decimal_point;
+	dest->negative = src->negative;
 
-    memcpy(dest->digits, src->digits, src->length * sizeof(u8));
+	memcpy(dest->digits, src->digits, src->length * sizeof(u8));
 
-    return true;
+	return true;
 }

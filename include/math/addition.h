@@ -20,7 +20,7 @@
 
 #include <stdbool.h>
 
-#include "math/number.h"
+#include <math/number.h>
 
 bool number_addition(const Number *a, const Number *b, Number *result);
 

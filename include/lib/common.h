@@ -37,19 +37,19 @@
 #define CLAMP(a, x, b) (((x) < (a)) ? (a) : ((b) < (x)) ? (b) : (x))
 
 #define ENSURE_CAP(size, nmemb, cap, vals)    \
-    do {                                      \
-	if (nmemb == cap) {                   \
-	    cap <<= 1;                        \
-	    vals = realloc(vals, cap * size); \
-	}                                     \
-    } while (0)
+	do {                                      \
+		if (nmemb == cap) {                   \
+			cap <<= 1;                        \
+			vals = realloc(vals, cap * size); \
+		}                                     \
+	} while (0)
 
 #define REDUCE_CAP(size, nmemb, cap, vals)    \
-    do {                                      \
-	if (nmemb == (cap >> 1)) {            \
-	    cap >>= 1;                        \
-	    vals = realloc(vals, cap * size); \
-	}                                     \
-    } while (0)
+	do {                                      \
+		if (nmemb == (cap >> 1)) {            \
+			cap >>= 1;                        \
+			vals = realloc(vals, cap * size); \
+		}                                     \
+	} while (0)
 
 #endif /* COMMON_H */

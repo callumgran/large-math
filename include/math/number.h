@@ -20,7 +20,7 @@
 
 #include <stdbool.h>
 
-#include "lib/common.h"
+#include <lib/common.h>
 
 #define NUMBER_DEFAULT_CAPACITY 32
 
@@ -28,11 +28,11 @@
  * Digit array is stored in reverse order
  */
 typedef struct {
-    u8 *digits;
-    u32 length;
-    u32 capacity;
-    u32 decimal_point;
-    bool negative;
+	u8 *digits;
+	u32 length;
+	u32 capacity;
+	u32 decimal_point;
+	bool negative;
 } Number;
 
 bool number_init(Number *number, const char *num_str);

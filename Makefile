@@ -14,6 +14,7 @@ LDLIBS =
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = math
+TARGET_LOAD_NUMBER_TEST = load_number_test
 
 all: $(TARGET)
 
@@ -39,6 +40,9 @@ bear:
 
 format:
 	python format.py
+
+load_number_test:
+	$(CC) ./test/number/load_number_test.c ./src/math/number.c -o $(TARGET_LOAD_NUMBER_TEST) $(CFLAGS)
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
